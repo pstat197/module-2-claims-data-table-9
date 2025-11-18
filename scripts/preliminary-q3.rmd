@@ -121,4 +121,77 @@ model4 <- keras_model_sequential() %>%
 summary(model4)
 ```
 
+## Training and model selection
+
+Now, for each model, we will configure the model and train it:
+```{r}
+# configure
+model1 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history1 <- model1 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model2 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history2 <- model2 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model3 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history3 <- model3 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model4 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history4 <- model4 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+```
+
+
 
