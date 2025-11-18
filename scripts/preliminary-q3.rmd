@@ -194,4 +194,56 @@ history4 <- model4 %>%
 ```
 
 
+## Testing accuracy for each model
+
+Now, we test the accuracy of each model trained. 
+```{r}
+# model 1
+pred1 <- model1 %>%
+  predict(test_text) %>%
+  as.numeric()
+class1 <- ifelse(pred1 > 0.5, 1, 0)
+acc1 <- mean(class1 == test_labels)
+
+
+# model 2
+pred2 <- model2 %>%
+  predict(test_text) %>%
+  as.numeric()
+class2 <- ifelse(pred2 > 0.5, 1, 0)
+acc2 <- mean(class2 == test_labels)
+
+
+# model 3
+pred3 <- model3 %>%
+  predict(test_text) %>%
+  as.numeric()
+class3 <- ifelse(pred3 > 0.5, 1, 0)
+acc3 <- mean(class3 == test_labels)
+
+
+# model 4
+pred4 <- model4 %>%
+  predict(test_text) %>%
+  as.numeric()
+class4 <- ifelse(pred4 > 0.5, 1, 0)
+acc4 <- mean(class4 == test_labels)
+
+
+# summary table
+tibble(
+  model = c("model1", "model2", "model3", "model4"),
+  test_accuracy = c(acc1, acc2, acc3, acc4)
+)
+```
+
+
+## Saving the best model
+
+```{r}
+save_model_tf(model1, "../results/model1")
+save_model_tf(model2, "../results/model2")
+save_model_tf(model3, "../results/model3")
+save_model_tf(model4, "../results/model4")
+```
 
