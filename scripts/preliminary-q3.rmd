@@ -1,0 +1,27 @@
+---
+title: "Neural network training (Preliminary task 3)"
+output: html_document
+---
+
+## Setup
+
+In this section I load the raw data, apply the existing preprocessing pipeline, and create a cleaned version of the data for modeling.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(keras)
+library(tensorflow)
+
+source("preprocessing.R")
+
+set.seed(133233)
+```
+
+```{r preprocess}
+load("../data/claims-raw.RData")
+
+claims_clean <- claims_raw %>%
+  parse_data()
+```
+
