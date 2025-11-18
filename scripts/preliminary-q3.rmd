@@ -72,130 +72,53 @@ preprocess_layer %>% adapt(train_text)
 Now, I made a small set of candidates for architectures. The difference for each of them is the number of hidden units and layers changes. 
 
 ```{r}
-install_tensorflow()
-# define NN architecture
+# model 1: shallow model with small hidden layer (baseline)
 model1 <- keras_model_sequential() %>%
   preprocess_layer() %>%
   layer_dropout(0.2) %>%
-  layer_dense(units = 25) %>%
+  layer_dense(units = 25, activation = "relu") %>%
   layer_dropout(0.2) %>%
-  layer_dense(1) %>%
-  layer_activation(activation = 'sigmoid')
+  layer_dense(1, activation = "sigmoid")
 
-summary(model)
+summary(model1)
+
+
+
+# model 2: wider single layer
+model2 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model2)
+
+
+
+# model 3: two hidden layers to test deeper learning
+model3 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model3)
+
+
+
+# model 4: smaller model with stronger dropout
+model4 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dropout(0.5) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model4)
 ```
 
-I use a helper function that creates and compiles a model given a configuration.
-
-```{r build-model}
-build_model <- function(units1, units2 = NA_integer_, dropout = 0.3) {
-  model <- keras_model_sequential() %>%
-    preprocess_layer() %>%
-    layer_dropout(rate = dropout) %>%
-    layer_dense(units = units1, activation = "relu")
-  
-  if (!is.na(units2)) {
-    model <- model %>%
-      layer_dropout(rate = dropout) %>%
-      layer_dense(units = units2, activation = "relu")
-  }
-  
-  model <- model %>%
-    layer_dropout(rate = dropout) %>%
-    layer_dense(units = 1, activation = "sigmoid")
-  
-  model %>% compile(
-    loss = "binary_crossentropy",
-    optimizer = "adam",
-    metrics = "binary_accuracy"
-  )
-  
-  model
-}
-
-
-# configure for training
-model %>% compile(
-  loss = 'binary_crossentropy',
-  optimizer = 'adam',
-  metrics = 'binary_accuracy'
-)
-
-# train
-history <- model %>%
-  fit(train_text, 
-      train_labels,
-      validation_split = 0.3,
-      epochs = 5)
-
-## CHECK TEST SET ACCURACY HERE
-
-# save the entire model as a SavedModel
-save_model_tf(model, "results/example-model")
-```
-```
-
-## Training and model selection
-
-For each configuration, I train a model with early stopping and record both validation accuracy and test accuracy. The validation split is taken from the training portion, and the test accuracy is computed on the held out test set.
-
-```{r train-loop, message=FALSE, warning=FALSE}
-callback_list <- list(
-  callback_early_stopping(
-    monitor = "val_loss",
-    patience = 3,
-    restore_best_weights = TRUE
-  )
-)
-
-results <- vector("list", nrow(configs))
-
-for (i in seq_len(nrow(configs))) {
-  cfg <- configs[i, ]
-  
-  model_i <- build_model(
-    units1  = cfg$units1,
-    units2  = cfg$units2,
-    dropout = cfg$dropout
-  )
-  
-  history_i <- model_i %>%
-    fit(
-      x = train_text,
-      y = train_labels,
-      validation_split = 0.3,
-      epochs = 20,
-      callbacks = callback_list,
-      verbose = 0
-    )
-  
-  val_acc <- max(history_i$metrics$val_binary_accuracy)
-  
-  test_pred_probs <- model_i %>%
-    predict(test_text) %>%
-    as.numeric()
-  
-  test_pred_class <- ifelse(test_pred_probs > 0.5, 1, 0)
-  test_acc <- mean(test_pred_class == test_labels)
-  
-  results[[i]] <- list(
-    name    = cfg$name,
-    val_acc = val_acc,
-    test_acc = test_acc,
-    model   = model_i,
-    history = history_i
-  )
-}
-
-results_df <- purrr::map_dfr(
-  results,
-  ~ tibble(
-    name    = .x$name,
-    val_acc = .x$val_acc,
-    test_acc = .x$test_acc
-  )
-)
-
-results_df
-```
 
