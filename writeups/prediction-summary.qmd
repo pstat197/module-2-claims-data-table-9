@@ -1,37 +1,21 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
-date: today
+author: 'Satvik Talchuru'
+date: 11/17/2025
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
-
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+We developed a predictive model for classifying webpages into “relevant claim content’’ vs. “no relevant content’’ using the cleaned text provided in `claims-clean-example.RData`. We represented page text using TF–IDF and trained a LASSO logistic regression model for the binary classification task. This model achieved strong performance with cross-validated accuracy comparable to in-class PCA logistic regression benchmarks. Multiclass modeling was not performed for this project, so multiclass results are not applicable.
 
 ### Preprocessing
 
-In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
-
--   what text content was extracted from HTML
-
--   how text was cleaned
-
--   how cleaned text was represented quantitatively
+The visible text, including header content and paragraph text, was taken from the raw HTML. After eliminating markup, punctuation, stopwords, and standardizing to lowercase, this text was cleaned. Then, the cleansed text was tokenized into word tokens and transformed into a sparse term-document matrix. Using TF–IDF weighting, we generated quantitative feature representations with tens of thousands of distinct tokens that were appropriate for machine learning. The held-out test pages were preprocessed using the same vocabulary and TF–IDF transformer.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
-
--   what ML/statistical method was used
-
--   model specification and hyperparameter selection
-
--   training method
+We employed a LASSO logistic regression model ('glmnet') for the binary classification assignment. We used TF–IDF characteristics from the training dataset as input to a cross-validated penalized logistic regression model. Because it automatically selects features, the L1 penalty (alpha = 1) is ideal for sparse text data in high dimensions. Using cross-validation, the tuning parameter that reduced the misclassification rate was automatically chosen (`lambda.min`). On the test set, the last model was used to predict class probabilities, which were then thresholded at 0.5 to create binary class predictions. No model was trained for the multiclass job. As a result, the metrics and predictions for several classes were not relevant for this submission.
 
 ### Results
 
 Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
-
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
