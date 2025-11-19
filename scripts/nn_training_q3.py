@@ -1,7 +1,6 @@
 """
 this is converting the r code to python code
 """
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -145,6 +144,6 @@ results_dir = Path(__file__).parent.parent / "results" / "models"
 results_dir.mkdir(exist_ok=True)
 
 for name, model in models.items():
-    save_path = results_dir / f"{name}.keras"
+    save_path = results_dir / f"{name}.h5" #saving as .keras was not working so changed to .h5
     print(f"Saving {name} to {save_path}")
     model.save(save_path)
