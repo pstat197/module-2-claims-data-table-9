@@ -1,0 +1,255 @@
+---
+title: "Neural network training (Preliminary task 3)"
+output: html_document
+---
+
+This follows a similar structure to `nlp-model-development.R`. 
+
+## Setup
+
+In this section I load the raw data, apply the existing preprocessing pipeline, and create a cleaned version of the data for modeling.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(keras)
+library(tensorflow)
+
+source("preprocessing.R")
+
+set.seed(133233)
+```
+
+```{r preprocess}
+load("../data/claims-raw.RData")
+
+claims_clean <- claims_raw %>%
+  parse_data()
+
+claims_clean %>%
+  select(text_clean, bclass) %>%
+  mutate(bclass = as.integer(bclass) - 1L) %>%
+  readr::write_csv("../data/claims-clean-task3.csv")
+```
+
+## NOTABLE: I do not use the following code. I had a lot of problems with R, so I converted it to python, see code in 'nn_training_q3.py'. 
+
+## Train and test split
+
+Splitting into two different datasets: one is for testing and one for training (with a $20/80$ split respectively).
+
+```{r split}
+
+partitions <- claims_clean %>%
+  initial_split(prop = 0.8)
+
+train_df <- training(partitions)
+test_df  <- testing(partitions)
+
+train_text <- train_df %>% pull(text_clean)
+train_labels <- train_df %>%
+  pull(bclass) %>%
+  as.numeric() - 1
+
+test_text <- test_df %>% pull(text_clean)
+test_labels <- test_df %>%
+  pull(bclass) %>%
+  as.numeric() - 1
+```
+
+## Text vectorization layer
+
+I use a Keras text vectorization layer that converts raw text into tf-idf document vectors. This is same as seen in the example file.
+
+```{r text-vectorization}
+preprocess_layer <- layer_text_vectorization(
+  standardize = NULL,
+  split = 'whitespace',
+  ngrams = NULL,
+  max_tokens = NULL,
+  output_mode = 'tf_idf'
+)
+
+preprocess_layer %>% adapt(train_text)
+```
+
+## Neural network configurations
+
+Now, I made a small set of candidates for architectures. The difference for each of them is the number of hidden units and layers changes. 
+
+```{r}
+# model 1: shallow model with small hidden layer (baseline)
+model1 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.2) %>%
+  layer_dense(units = 25, activation = "relu") %>%
+  layer_dropout(0.2) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model1)
+
+
+
+# model 2: wider single layer
+model2 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model2)
+
+
+
+# model 3: two hidden layers to test deeper learning
+model3 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dropout(0.3) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model3)
+
+
+
+# model 4: smaller model with stronger dropout
+model4 <- keras_model_sequential() %>%
+  preprocess_layer() %>%
+  layer_dropout(0.5) %>% 
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dropout(0.5) %>%
+  layer_dense(1, activation = "sigmoid")
+
+summary(model4)
+```
+
+## Training and model selection
+
+Now, for each model, we will configure the model and train it:
+```{r}
+# configure
+model1 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history1 <- model1 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model2 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history2 <- model2 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model3 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history3 <- model3 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+
+
+# configure
+model4 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = "binary_accuracy"
+)
+
+# train
+history4 <- model4 %>%
+  fit(
+    train_text,
+    train_labels,
+    validation_split = 0.3,
+    epochs = 5
+  )
+```
+
+
+## Testing accuracy for each model
+
+Now, we test the accuracy of each model trained. 
+```{r}
+# model 1
+pred1 <- model1 %>%
+  predict(test_text) %>%
+  as.numeric()
+class1 <- ifelse(pred1 > 0.5, 1, 0)
+acc1 <- mean(class1 == test_labels)
+
+
+# model 2
+pred2 <- model2 %>%
+  predict(test_text) %>%
+  as.numeric()
+class2 <- ifelse(pred2 > 0.5, 1, 0)
+acc2 <- mean(class2 == test_labels)
+
+
+# model 3
+pred3 <- model3 %>%
+  predict(test_text) %>%
+  as.numeric()
+class3 <- ifelse(pred3 > 0.5, 1, 0)
+acc3 <- mean(class3 == test_labels)
+
+
+# model 4
+pred4 <- model4 %>%
+  predict(test_text) %>%
+  as.numeric()
+class4 <- ifelse(pred4 > 0.5, 1, 0)
+acc4 <- mean(class4 == test_labels)
+
+
+# summary table
+tibble(
+  model = c("model1", "model2", "model3", "model4"),
+  test_accuracy = c(acc1, acc2, acc3, acc4)
+)
+```
+
+
+## Saving the best model
+
+```{r}
+save_model_tf(model1, "../results/model1")
+save_model_tf(model2, "../results/model2")
+save_model_tf(model3, "../results/model3")
+save_model_tf(model4, "../results/model4")
+```
+
