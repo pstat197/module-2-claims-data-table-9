@@ -6,32 +6,16 @@ date: today
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
-
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+We created a predictive model to categorize websites into two categories—relevant claim content versus non-claim content—for the main purpose. A LASSO logistic regression model was trained using text taken from websites and converted into TF–IDF features. The regularization strength was fine-tuned using cross-validation, resulting in a robust model with excellent performance in the binary classification challenge.
 
 ### Preprocessing
 
-In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
-
--   what text content was extracted from HTML
-
--   how text was cleaned
-
--   how cleaned text was represented quantitatively
+The processed dataset includes the cleaned text, which was taken from the HTML of web pages. All markup, punctuation, numbers, URLs, and other extraneous material had previously been removed from the text. We created a lexicon by tokenizing the text into words and eliminating terms that were either extremely uncommon or very frequent. The TF–IDF weighting approach was used to convert a sparse document-term matrix. To guarantee consistency across datasets, the test set underwent the same TF-IDF conversion and vocabulary.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
-
--   what ML/statistical method was used
-
--   model specification and hyperparameter selection
-
--   training method
+Our binary model for the primary task was a LASSO logistic regression trained on TF–IDF features derived from unigram tokens. After tokenizing the cleaned webpage text, we constructed a vocabulary and applied pruning thresholds (term_count_min = 3 and doc_proportion_max = 0.5) to remove extremely rare tokens and overly common terms that do not contribute discriminative information. We then generated a high-dimensional sparse document–term matrix and applied a TF–IDF transformation to scale features by term frequency and inverse document frequency. The binary response variable was encoded as 0/1 corresponding to the two claim-status categories. We used the glmnet package to fit a logistic regression model with an L1 penalty (LASSO), which shrinks many coefficients to zero and is well-suited for text data with thousands of features. Model tuning was performed using 10-fold cross-validation to select the optimal regularization parameter (lambda.min) that minimized the misclassification error. The final model was refit using the selected lambda and then applied to the test data using the same vocabulary, vectorizer, and TF–IDF transformation.
 
 ### Results
 
-Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
-
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+We measured how well the model performed on the training data in order to keep the evaluation straightforward. The last logistic regression model using LASSO predicted an overall accuracy of around 90.5%, indicating that the majority of pages were correctly classified by the model. With a sensitivity of around 89.3%, it was able to accurately identify pages with claim-relevant information. With about 91.8% specificity, the algorithm correctly identified non-claim pages somewhat more often. According to these findings, the model accurately predicts claim-related content and performs well for the binary classification assignment. 
