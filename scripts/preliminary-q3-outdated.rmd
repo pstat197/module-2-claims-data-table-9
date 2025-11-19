@@ -25,14 +25,20 @@ load("../data/claims-raw.RData")
 
 claims_clean <- claims_raw %>%
   parse_data()
+
+claims_clean %>%
+  select(text_clean, bclass) %>%
+  mutate(bclass = as.integer(bclass) - 1L) %>%
+  readr::write_csv("../data/claims-clean-task3.csv")
 ```
+
+## NOTABLE: I do not use the following code. I had a lot of problems with R, so I converted it to python, see code in 'nn_training_q3.py'. 
 
 ## Train and test split
 
 Splitting into two different datasets: one is for testing and one for training (with a $20/80$ split respectively).
 
 ```{r split}
-load("data/claims-clean-task3.RData")
 
 partitions <- claims_clean %>%
   initial_split(prop = 0.8)
@@ -53,7 +59,7 @@ test_labels <- test_df %>%
 
 ## Text vectorization layer
 
-I use a Keras text vectorization layer that converts raw text into tf-idf document vectors. The layer is fitted on the training text and then reused across all neural network configurations.
+I use a Keras text vectorization layer that converts raw text into tf-idf document vectors. This is same as seen in the example file.
 
 ```{r text-vectorization}
 preprocess_layer <- layer_text_vectorization(
