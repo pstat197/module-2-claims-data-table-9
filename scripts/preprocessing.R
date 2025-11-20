@@ -57,3 +57,70 @@ nlp_fn <- function(parse_data.out){
                 values_fill = 0)
   return(out)
 }
+
+safe_parse_fn <- function(html) {
+  if (is.na(html) || html == "") return(NA_character_)  # return NA for empty input
+  tryCatch(
+    parse_fn(html),  # call original parse_fn
+    error = function(e) NA_character_  # return NA if parsing fails
+  )
+}
+
+parse_data_safe_na <- function(df) {
+  df %>%
+    mutate(
+      text_clean = map_chr(text_tmp, safe_parse_fn)  # always keeps the same number of rows
+    )
+}
+
+parse_data_safe <- function(df, chunk_size = 50) {
+  n <- nrow(df)
+  out_list <- list()
+  
+  for (i in seq(1, n, by = chunk_size)) {
+    idx <- i:min(i + chunk_size - 1, n)
+    chunk <- df[idx, ]
+    
+    # Only parse rows with HTML
+    chunk <- chunk %>% filter(str_detect(text_tmp, '<!'))
+    
+    # Use safe_parse_fn instead of parse_fn
+    chunk$text_clean <- map_chr(chunk$text_tmp, safe_parse_fn)
+    
+    out_list[[length(out_list) + 1]] <- chunk
+    
+    # Free memory after each chunk
+    rm(chunk)
+    gc()
+  }
+  
+  bind_rows(out_list)
+}
+
+nlp_fn_safe <- function(df, chunk_size = 50) {
+  out_list <- list()
+  n <- nrow(df)
+  
+  for (i in seq(1, n, by = chunk_size)) {
+    idx <- i:min(i + chunk_size - 1, n)
+    chunk <- df[idx, ]
+    
+    # Call your original nlp_fn but catch errors
+    chunk_tokens <- tryCatch(
+      nlp_fn(chunk), 
+      error = function(e) {
+        message("Chunk failed: ", i)
+        return(NULL)
+      }
+    )
+    
+    if (!is.null(chunk_tokens)) {
+      out_list[[length(out_list) + 1]] <- chunk_tokens
+    }
+    
+    rm(chunk, chunk_tokens)
+    gc()
+  }
+  
+  bind_rows(out_list)
+}
