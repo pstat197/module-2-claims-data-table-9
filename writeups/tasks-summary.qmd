@@ -1,7 +1,7 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
-date: today
+author: 'Eitan Boaz, Madhav Rao, Satvik Talchuru, Charles Yang'
+date: 11/19/2025
 ---
 
 ### HTML scraping
