@@ -3,6 +3,7 @@ library(tm)
 library(SnowballC)
 library(e1071)
 library(text2vec)
+library(yardstick)
 
 load("data/claims-clean.RData")
 source("scripts/preprocessing.R")
@@ -26,7 +27,7 @@ corpus <- corpus %>%
 # build TF–IDF matrix
 dtm <- DocumentTermMatrix(corpus, control = list(weighting = weightTfIdf))
 
-dtm <- removeSparseTerms(dtm, 0.99)
+dtm <- removeSparseTerms(dtm, 0.995)
 
 X <- as.matrix(dtm)
 y <- as.factor(labels)       # multi-class label
@@ -52,8 +53,28 @@ svm_model <- svm(
 
 # evaluate internal performance
 pred <- predict(svm_model, X_test)
-mean(pred == y_test)
-table(pred, y_test)
+
+# compute metrics
+df_metrics <- tibble(
+  truth = y_test,
+  pred  = pred
+)
+
+# Accuracy
+accuracy(df_metrics, truth, pred)
+
+# micro-averaged
+sens(df_metrics, truth, pred, estimator = "micro")
+spec(df_metrics, truth, pred, estimator = "micro")
+
+# Sensitivity & Specificity (macro-averaged)
+# sens(df_metrics, truth, pred, estimator = "macro")
+# spec(df_metrics, truth, pred, estimator = "macro")
+
+# weighted
+# sens(df_metrics, truth, pred, estimator = "macro_weighted")
+# spec(df_metrics, truth, pred, estimator = "macro_weighted")
+
 
 svm_final <- svm(
   x = X,
@@ -96,5 +117,16 @@ pred_df <- data.frame(
   mclass.pred = mclass_pred
 )
 
-save(pred_df, file = "results/svm_mclass_predictions.RData")
-head(pred_df)
+# Load binary predictions file
+load("results/preds-group9.RData")  # loads pred_df
+
+# SVM multi-class predictions
+multi_df <- data.frame(
+  .id = claims_test$.id,
+  mclass.pred = mclass_pred
+)
+
+merged_df <- left_join(pred_df, multi_df, by = ".id")
+
+save(merged_df, file = "results/preds-group9.RData")
+head(merged_df)
