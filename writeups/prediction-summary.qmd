@@ -1,37 +1,114 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
+author: 'Eitan Boaz, Madhav Rao, Satvik Talchuru, Charles Yang'
 date: today
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
 
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+**Binary Model**
+
+We created a predictive model to categorize websites into two categories: relevant claim content
+and non-claim content. A LASSO logistic regression model was trained using text taken from
+websites and converted into TF–IDF features. The regularization strength was further improved
+using cross-validation methods, resulting in a model with moderate to excellent performance in
+the binary classification task. With high sensitivity and specificity, the final model's training
+accuracy was 90.5% and its predicted cross-validated accuracy was 78.5%. The data shows that
+claim-related websites can be successfully separated from irrelevant content using a sparse linear
+model.
+
+**Multiclass Model**
+
+This task used cleaned text scraped from insurance claim webpages to build a predictive model
+for multiclass classification. Text was processed into TF–IDF features and went through a 80–20
+split for training and test sets. For multiclass prediction, a linear Support Vector Machine (SVM)
+was trained on the TF–IDF representations. The model achieved roughly 73.1% accuracy on
+held-out validation data, with micro-averaged sensitivity and specificity of 73.1% and 93.3%,
+respectively. The final SVM model was retrained on the full dataset and applied to the unlabeled
+test set for submission.
 
 ### Preprocessing
 
-In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
 
--   what text content was extracted from HTML
-
--   how text was cleaned
-
--   how cleaned text was represented quantitatively
+A similar preprocessing pipeline was employed for both the binary and multi-class models. All
+preprocessing steps were from the project's HTML-to-text pipeline. The paragraph text in the
+raw HTML was retrieved, and it was cleaned by normalizing capitalization and spacing, and by
+eliminating URLs, email addresses, punctuation, numerals, and special characters. The cleaned
+text was next converted into a document-term matrix after being tokenized into words,
+lemmatized, and stripped of stopwords. We used a TF–IDF transformation to represent the text.
+This transformation gives weight to words based on how often they appear in a document instead
+of how they appear throughout the dataset. Noise reduction and increased stability of subsequent
+modeling were achieved through vocabulary pruning, like eliminating very rare and more
+common tokens.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
+**Binary Model**
 
--   what ML/statistical method was used
+Our main objective was to create a reliable model that could differentiate between web pages that
+include information that is pertinent to claims and those that do not. We built a binary classifier
+using a LASSO logistic regression model trained on TF–IDF characteristics taken from unigram
+tokens. We created a large vocabulary and used thresholds (`term_count_min = 3`,
+`doc_proportion_max = 0.5`) to eliminate very uncommon words and overly popular terms,
+guaranteeing that only informative language patterns were used in the model after tokenizing and
+cleaning the text of the website. TF–IDF was used to convert the resultant high-dimensional
+document-term matrix, giving more weight to discriminative words.
 
--   model specification and hyperparameter selection
+We also encoded the response variable as a 0/1 indicator of claim relevance and used the
+`glmnet` package to train a logistic regression model, a technique well-suited for sparse text data
+since it regularizes the model while selecting features. Using 10-fold cross-validation, the
+hyperparameters were optimized to minimize misclassification error at the best regularization
+level (`lambda.min`). In the end, the model was refitted using this ideal lambda and applied to
+the unlabeled test dataset using the same preprocessing pipeline (vocabulary, vectorizer, and
+TF–IDF transformation) in order to produce consistent predictions.
 
--   training method
+**Multi-class Model**
+
+For multiclass prediction, we trained a linear Support Vector Machine (SVM). The model was fit
+on an 80/20 train-test split of the TF–IDF matrix, using a linear kernel and cost parameter of 1.
+Hyperparameters were selected using internal validation consistent with common practice for
+high-dimensional text classification. After evaluating performance on the held-out validation set,
+a final SVM model was retrained on the full dataset to generate predictions for the unlabeled
+claims-test data. Predictions were produced using the same TF–IDF vocabulary, ensuring
+consistency between training and deployment.
 
 ### Results
 
-Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
+#### Binary Model
 
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+We used two metrics to assess our binary classifier: cross-validated accuracy and training-set
+performance. The model's capacity to generalize to unseen webpages was estimated by the
+10-fold cross-validation to be approximately 78.5%. The final logistic regression model based on
+LASSO achieved an overall accuracy of about 90.5% when tested on the complete training
+dataset, indicating that it correctly categorized the majority of online sites. Its specificity was
+91.8%, showing a little bit better performance in identifying non-claim content, while its
+sensitivity was around 89.3%, showing a good ability to identify pages that were relevant to the
+claim.
+
+#### Binary Model Performance
+
+| Metric                  | Value  |
+|-------------------------|--------|
+| Cross-validated accuracy | 78.5% |
+| Training accuracy       | 90.5% |
+| Sensitivity             | 89.3% |
+| Specificity             | 91.8% |
+
+#### Multi-class Model
+
+Model performance was evaluated on the 20% held-out validation set. Accuracy was computed
+directly, while sensitivity and specificity were estimated using micro-averaging, which weights
+classes proportionally to their frequency. The results indicate strong overall discrimination, with
+particularly high specificity across classes. The final SVM model was saved and used to produce
+predictions for the test set.
+
+#### Multi-class Model Performance
+
+| Metric              | Value  |
+|---------------------|--------|
+| Accuracy            | 73.1% |
+| Sensitivity (micro) | 73.1% |
+| Specificity (micro) | 93.3% |
+
+[^1]: Sensitivity and specificity for the multiclass case are computed using micro-averaging.
